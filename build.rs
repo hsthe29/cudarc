@@ -219,6 +219,9 @@ fn static_linking(major: usize, minor: usize) {
     println!("cargo:rustc-link-search=native={}", dir.display());
     println!("cargo:rustc-link-lib=static:+whole-archive=stdc++");
     println!("cargo:warning=libstdc++.a picked at {}", full_path);
+
+    // zlib1g-dev
+    println!("cargo:rustc-link-lib=z");
     
     #[cfg(any(feature = "driver", feature = "runtime"))]
     {
