@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 fn main() {
     #[cfg(all(
@@ -206,7 +207,19 @@ fn static_linking(major: usize, minor: usize) {
         }
     }
 
+    let out = Command::new("g++")
+        .arg("-print-file-name=libstdc++.a")
+        .output()
+        .expect("failed to execute g++");
+
+    let full_path = String::from_utf8(out.stdout).unwrap();
+    let full_path = full_path.trim(); // /usr/lib/gcc/…/libstdc++.a
+    let dir = Path::new(full_path).parent().unwrap();
+    
+    println!("cargo:rustc-link-search=native={}", dir.display());
     println!("cargo:rustc-link-lib=static:+whole-archive=stdc++");
+    println!("cargo:warning=libstdc++.a picked at {}", full_path);
+    
     #[cfg(any(feature = "driver", feature = "runtime"))]
     {
         println!("cargo:rustc-link-lib=dylib=cuda");
@@ -239,7 +252,18 @@ fn static_linking(major: usize, minor: usize) {
     #[cfg(feature = "cusolver")]
     println!("cargo:rustc-link-lib=static:+whole-archive=cusolver_static");
     #[cfg(feature = "cudnn")]
-    println!("cargo:rustc-link-lib=static:+whole-archive=cudnn");
+    {
+        println!("cargo:rustc-link-lib=static:+whole-archive=cudnn_ops_static");
+        println!("cargo:rustc-link-lib=static:+whole-archive=cudnn_cnn_static");
+        println!("cargo:rustc-link-lib=static:+whole-archive=cudnn_adv_static");
+        println!("cargo:rustc-link-lib=static:+whole-archive=cudnn_graph_static");
+        println!("cargo:rustc-link-lib=static:+whole-archive=cudnn_heuristic_static");
+        println!("cargo:rustc-link-lib=static:+whole-archive=cudnn_engines_precompiled_static");
+        println!(
+            "cargo:rustc-link-lib=static:+whole-archive=cudnn_engines_runtime_compiled_static"
+        );
+    }
+    // println!("cargo:rustc-link-lib=static:+whole-archive=cudnn");
 }
 
 #[allow(unused)]
